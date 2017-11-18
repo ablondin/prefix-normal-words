@@ -1,3 +1,5 @@
+from itertools import product, combinations
+
 def num_occurrences(word, letter):
     r"""
     Returns the number of occurrences of ``letter`` in ``word``.
@@ -88,7 +90,6 @@ def all_binary_words_with_k_ones(n, k):
         sage: list(all_binary_words_with_k_ones(4, 2))
         ['1100', '1010', '1001', '0110', '0101', '0011']
     """
-    from itertools import combinations
     for combination in combinations(range(n), k):
         yield ''.join([str(int(l in combination)) for l in range(n)])
 
@@ -109,3 +110,42 @@ def f1_orbit_generator(word):
         u = Word(u)
         if are_f1_equivalent(word, u):
             yield u
+
+def orbits_sizes_generator(length):
+    r"""
+    Generates the sizes of the `F_1`-orbits for all words of given ``length``.
+
+    EXAMPLE::
+
+        sage: list(orbits_sizes(4))
+        [1, 4, 1, 2, 3, 2, 2, 1]
+    """
+    for word in product('01', repeat=length):
+        word = Word(word)
+        if is_prefix_normal(word):
+            yield sum(1 for _ in f1_orbit_generator(word))
+
+def orbit_graph(word, max_dist=6):
+    r"""
+    Returns the orbit's graph of the given word.
+
+    The adjacency relation is given by the maximum allowed distance. In other
+    words, there is an edge between `u` and `v` if and only if the letters of
+    `u` and `v` differ in at most ``max_dist`` positions.
+
+    EXAMPLES::
+
+        sage: orbit_graph(Word('01001'))
+        Graph on 2 vertices
+        sage: orbit_graph(Word('01101'))
+        Graph on 4 vertices
+    """
+    words = list(f1_orbit_generator(word))
+    g = Graph()
+    g.add_vertices(words)
+    for u in words:
+        for v in words:
+            diff = [i for i in range(len(u)) if u[i] != v[i]]
+            if len(diff) <= max_dist:
+                g.add_edge(u, v, label=len(diff))
+    return g
